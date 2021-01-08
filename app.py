@@ -7,6 +7,8 @@ app = Chalice(app_name='alpaca01')
 
 api = tradeapi.REST(config.key, config.sec, config.url, api_version='v2')
 
+usd_amount = 100
+
 @app.route('/')
 def index():
     return {'hello': 'world'}
@@ -17,11 +19,20 @@ def alpaca01():
     webhook_message = request.json_body
     
     if webhook_message['side'] == "buy":
-        data = api.submit_order(symbol=webhook_message['ticker'],
-                qty="1",
-                side=webhook_message['side'],
-                type="market",
-                time_in_force="gtc")
+        if webhook_message['close'] <= usd_amount:
+            quantity = usd_amount/webhook_message['close']
+            rounded = round(quantity, 0)
+            data = api.submit_order(symbol=webhook_message['ticker'],
+                    qty=rounded,
+                    side=webhook_message['side'],
+                    type="market",
+                    time_in_force="gtc")
+        else:
+            data = api.submit_order(symbol=webhook_message['ticker'],
+                    qty="1",
+                    side=webhook_message['side'],
+                    type="market",
+                    time_in_force="gtc")
 
     else: 
         position = api.get_position(webhook_message['ticker'])
